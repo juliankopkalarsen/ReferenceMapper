@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.FindSymbols;
+using Gremlin.Net.Process.Traversal;
 
 namespace ReferenceMapper
 {
@@ -35,13 +36,65 @@ namespace ReferenceMapper
             return unreferenced;
         }
 
+        public static void AddMembers(string solutionPath, GraphTraversalSource graph)
+        {
+            var msWorkspace = MSBuildWorkspace.Create();
+
+            IEnumerable<Member> members = null;
+
+            if (solutionPath.EndsWith(".sln"))
+            {
+                members = msWorkspace
+                    .OpenSolutionAsync(solutionPath)
+                    .Result
+                    .Projects
+                    .SelectMany(p => GetMembers(p))
+                    .Where(m => m != null);
+            }
+            else if (solutionPath.EndsWith(".csproj"))
+            {
+                members = GetMembers(msWorkspace
+                    .OpenProjectAsync(solutionPath)
+                    .Result);
+            }
+            else
+            {
+                throw new ArgumentException("path was not to a solution or project");
+            }
+
+            foreach (var member in members)
+            {
+                var v = graph.AddV("member").Property("name", member.Name);
+                foreach (var reference in member.References)
+                {
+                    graph.V().Has("name", reference).AddE("references").To(v);
+                }
+            }
+        }
+
         public static IEnumerable<Member> GetMembers(string solutionPath)
         {
             var msWorkspace = MSBuildWorkspace.Create();
 
-            var solution = msWorkspace.OpenSolutionAsync(solutionPath).Result;
-
-            return solution.Projects.SelectMany(p => GetMembers(p)).Where(m => m != null);
+            if (solutionPath.EndsWith(".sln"))
+            {
+                return msWorkspace
+                    .OpenSolutionAsync(solutionPath)
+                    .Result
+                    .Projects
+                    .SelectMany(p => GetMembers(p))
+                    .Where(m => m != null);
+            }
+            else if (solutionPath.EndsWith(".csproj"))
+            {
+                return GetMembers(msWorkspace
+                    .OpenProjectAsync(solutionPath)
+                    .Result);
+            }
+            else
+            {
+                throw new ArgumentException("path was not to a solution or project");
+            }
         }
 
         private static IEnumerable<Member> GetMembers(Project project)

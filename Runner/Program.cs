@@ -1,4 +1,5 @@
-﻿using OpenSoftware.DgmlTools.Model;
+﻿using Gremlin.Net.Structure;
+using OpenSoftware.DgmlTools.Model;
 using ReferenceMapper;
 using System;
 using System.Collections.Generic;
@@ -13,17 +14,15 @@ namespace Runner
     {
         static void Main(string[] args)
         {
+            var g = new Graph().Traversal();
 
-            string lib = @"C:\Source\VMLib\src\VMLib.sln";
-            string lab = @"C:\Source\VMLab\src\VMLab with Wix Installer.sln";
+            SolutionScanner.AddMembers(@"..\..\..\TestClassLibrary\TestClassLibrary.csproj", g);
+            SolutionScanner.AddMembers(@"..\..\..\TestConsoleApp\TestConsoleApp.csproj", g);
 
-
-            //var methods = new SolutionScanner().GetUnreferencedMethods(solutionPath);
-
-            var members = SolutionScanner.GetMembers(@"C:\Source\Projects\VMLine2\src\VMLine2.sln").ToArray();//.Concat(SolutionScanner.GetMembers(lab)).ToArray();
-
+            Console.WriteLine(g.E().ToList());
 
             Console.WriteLine("parsed solutions");
+            Console.Read();
             //var members = new List<Member>
             //{
             //    new Member{Name = "first", References = {"second", "third"}},
@@ -32,31 +31,31 @@ namespace Runner
             //    new Member{Name = "fourth"}
             //};
 
-            var names = new HashSet<string>(members.Select(m => m.Name));
+            //var names = new HashSet<string>(members.Select(m => m.Name));
 
-            Console.WriteLine("members found");
+            //Console.WriteLine("members found");
 
-            foreach (var mem in members)
-            {
-                foreach (var reference in mem.References)
-                {
-                    names.Remove(reference);
-                }
-            }
+            //foreach (var mem in members)
+            //{
+            //    foreach (var reference in mem.References)
+            //    {
+            //        names.Remove(reference);
+            //    }
+            //}
 
-            Console.WriteLine("writing");
+            //Console.WriteLine("writing");
 
-            var filename = @"..\..\names.txt";
-            File.Delete(filename);
-            File.WriteAllLines(filename, names);
+            //var filename = @"..\..\names.txt";
+            //File.Delete(filename);
+            //File.WriteAllLines(filename, names);
 
-            foreach (var name in names)
-            {
-                Console.WriteLine(name);
-            }
+            //foreach (var name in names)
+            //{
+            //    Console.WriteLine(name);
+            //}
 
-            Console.ReadKey();
-            //var graph = ReferenceGraph.References2Dgml(members.Where(m => m != null).ToList());
+            //Console.ReadKey();
+            ////var graph = ReferenceGraph.References2Dgml(members.Where(m => m != null).ToList());
             //graph.WriteToFile(@"../../class-diagram.dgml");
 
             
