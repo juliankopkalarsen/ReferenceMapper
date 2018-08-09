@@ -13,14 +13,16 @@ namespace ReferenceMapper
         && m.Name.Contains(".Main(");
 
         public static Func<Member, bool> TestRelated => (Member m) => 
-        m.Attributes.Contains("NUnit.Framework.TestAttribute")
-        || m.Attributes.Contains("Test")
-        || m.Attributes.Contains("TestFixture")
-        || m.Attributes.Contains("TestCaseSource")
-        || m.Attributes.Contains("TestFixtureSetUp")
-        || m.Attributes.Contains("TestFixtureTearDown")
-        || m.Attributes.Contains("SetUp")
-        || m.Attributes.Contains("TearDown");
+            m.Attributes.Contains("NUnit.Framework.TestAttribute")
+            || m.Attributes.Contains("Test")
+            || m.Attributes.Contains("TestFixture")
+            || m.Attributes.Contains("TestCaseSource")
+            || m.Attributes.Contains("TestFixtureSetUp")
+            || m.Attributes.Contains("TestFixtureTearDown")
+            || m.Attributes.Contains("SetUp")
+            || m.Attributes.Contains("TearDown");
+
+        public static Func<Member, bool> Generated => (Member m) => m.IsGenerated;
     }
 
     public static class RootsExtensions

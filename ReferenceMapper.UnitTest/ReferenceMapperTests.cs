@@ -69,7 +69,7 @@ libMembers);
             var appMembers = SolutionScanner.GetMembers(@"..\..\..\TestConsoleApp\TestConsoleApp.csproj");
 
             var unreferencedMembers = SolutionScanner.FindUnreferenced(libMembers.Concat(appMembers),
-                isRoot: Roots.MainMethods.And(Roots.TestRelated)
+                isRoot: Roots.MainMethods.And(Roots.TestRelated).And(Roots.Generated)
                 ).ToList();
 
             AssertNotIncluded(unreferencedMembers, "void TestClassLibrary.AClass.AMethod(int)");
@@ -79,6 +79,9 @@ libMembers);
             AssertNotIncluded(unreferencedMembers, "void TestClassLibrary.AClass.OnlyReferencedByTestMethod(");
 
             AssertNotIncluded(unreferencedMembers, "static void TestConsoleApp.Program.Main(string[])");
+            AssertNotIncluded(unreferencedMembers, "void TestClassLibrary.Properties.Resource1.Resource1()");
+
+            
 
             AssertIncluded(unreferencedMembers, "void TestClassLibrary.AClass.UnreferencedMethod()");
             AssertIncluded(unreferencedMembers, "void TestClassLibrary.AClass.IndirectlyUnreferencedMethod()");

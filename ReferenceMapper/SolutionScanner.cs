@@ -93,6 +93,11 @@ namespace ReferenceMapper
         private static Member GetMembers(BaseMethodDeclarationSyntax m, SemanticModel semanticModel)
         {
             var symbol = semanticModel.GetDeclaredSymbol(m);
+
+            var parentSymbol = symbol.ContainingSymbol;
+
+            var parentAttributes = parentSymbol.GetAttributes().Select(a => a.ToString()).ToList();
+
             var name = SymbolString(symbol);
 
             if (name == null)
@@ -101,7 +106,8 @@ namespace ReferenceMapper
             }
             var mem = new Member {
                 Name = name,
-                Attributes = symbol.GetAttributes().Select(a => a.ToString()).ToArray()
+                Attributes = symbol.GetAttributes().Select(a => a.ToString()).ToArray(),
+                IsGenerated = parentAttributes.Contains("System.Runtime.CompilerServices.CompilerGeneratedAttribute")
             };
 
             

@@ -9,6 +9,7 @@ namespace ReferenceMapper
         public string[] References;
         public string[] Attributes;
 
+        public bool IsGenerated { get; internal set; }
 
         public override bool Equals(object obj)
         {
