@@ -33,13 +33,10 @@ namespace ReferenceMapper
             return unreferenced;
         }
 
-        public static IList<Member> FindUnreferenced(IEnumerable<Member> members)
-        {
-            var references = members.SelectMany(m => m.References).Distinct().ToList();
 
-            return members.Where(m => !references.Contains(m.Name)).ToList();
+        public static IList<Member> FindUnreferenced(IEnumerable<Member> members) =>
+            FindUnreferenced(members, m => m.Name.Contains("static") && m.Name.Contains(".Main("));
 
-        }
 
         public static IList<Member> FindUnreferenced(IEnumerable<Member> members, Func<Member, bool> except)
         {
