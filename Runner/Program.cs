@@ -12,6 +12,8 @@ namespace Runner
 
             var allMembers = args.SelectMany(a => SolutionScanner.GetMembers(a));
 
+            Console.WriteLine("Parsing is done");
+
             var unreferenced = SolutionScanner.FindUnreferenced(allMembers);
 
             Console.WriteLine("Unreferenced Members:");

@@ -11,42 +11,38 @@ namespace ReferenceMapper
 {
     public class SolutionScanner
     {
-        public string[] GetUnreferencedMethods(string solutionpath)
-        {
-            var msWorkspace = MSBuildWorkspace.Create();
-
-            var solution = msWorkspace.OpenSolutionAsync(solutionpath).Result;
-
-            //var docs = solution.Projects
-            //.SelectMany(p => p.Documents);
-
-            var proj = solution.Projects.First();
-
-            var compilation = proj.GetCompilationAsync().Result;
-            
-            var definedMembers = GetMemberNames(compilation.Assembly.GlobalNamespace).ToList();
-
-            var referencedMembers = proj.Documents.SelectMany(doc => GetReferences(doc)).ToArray();
-
-            var unreferenced = definedMembers.Except(referencedMembers).ToArray();
-            var internalRef = definedMembers.Intersect(referencedMembers);
-            return unreferenced;
-        }
-
-
         public static IList<Member> FindUnreferenced(IEnumerable<Member> members) =>
             FindUnreferenced(members, m => m.Name.Contains("static") && m.Name.Contains(".Main("));
 
 
-        public static IList<Member> FindUnreferenced(IEnumerable<Member> members, Func<Member, bool> except)
+        public static IList<Member> FindUnreferenced(IEnumerable<Member> members, Func<Member, bool> isRoot)
         {
-            var references = members
-                .SelectMany(m => m.References).Distinct().ToList();
+            var membersByName = members.ToDictionary(m => m.Name);
 
-            return members
-                .Where(m => !except(m))
-                .Where(m => !references.Contains(m.Name)).ToList();
+            var roots = membersByName.Values.Where(isRoot).ToList();
 
+            foreach (var root in roots)
+            {
+                RemoveReferences(root, membersByName);
+                membersByName.Remove(root.Name);
+            }
+
+            return membersByName.Values.ToList();
+
+        }
+
+        private static void RemoveReferences(Member root, Dictionary<string, Member> membersByName)
+        {
+            var toRemove = new List<Member>();
+            foreach (var referenceName in root.References)
+            {
+                toRemove.Add(membersByName[referenceName]);
+                membersByName.Remove(referenceName);
+            }
+            foreach (var item in toRemove)
+            {
+                RemoveReferences(item, membersByName);
+            }
         }
 
         public static IEnumerable<Member> GetMembers(string solutionPath)
@@ -55,12 +51,7 @@ namespace ReferenceMapper
 
             if (solutionPath.EndsWith(".sln"))
             {
-                return msWorkspace
-                    .OpenSolutionAsync(solutionPath)
-                    .Result
-                    .Projects
-                    .SelectMany(p => GetMembersFromProject(p))
-                    .Where(m => m != null);
+                return ReadSolution(solutionPath, msWorkspace);
             }
             else if (solutionPath.EndsWith(".csproj"))
             {
@@ -72,6 +63,16 @@ namespace ReferenceMapper
             {
                 throw new ArgumentException("path was not to a solution or project");
             }
+        }
+
+        private static IEnumerable<Member> ReadSolution(string solutionPath, MSBuildWorkspace msWorkspace)
+        {
+            return msWorkspace
+                                .OpenSolutionAsync(solutionPath)
+                                .Result
+                                .Projects
+                                .SelectMany(p => GetMembersFromProject(p))
+                                .Where(m => m != null);
         }
 
         private static IEnumerable<Member> GetMembersFromProject(Project project)
@@ -102,7 +103,7 @@ namespace ReferenceMapper
 
             var refs = new List<string>();
 
-            var invokes = m.SyntaxTree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>();
+            var invokes = m.Body.DescendantNodes().OfType<InvocationExpressionSyntax>();
             foreach (var invoke in invokes)
             {
                 var info = semanticModel.GetSymbolInfo(invoke);

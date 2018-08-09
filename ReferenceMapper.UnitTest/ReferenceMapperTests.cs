@@ -23,6 +23,17 @@ namespace ReferenceMapper.UnitTest
             },
             libMembers);
 
+            Assert.Contains(new Member
+            {
+                Name = "void TestClassLibrary.AClass.IndirectlyReferencedMethod()"
+            },
+            libMembers);
+
+            Assert.Contains(new Member
+            {
+                Name = "void TestClassLibrary.AClass.IndirectlyUnreferencedMethod()"
+            },
+            libMembers);
         }
 
         [Test]
@@ -46,12 +57,19 @@ namespace ReferenceMapper.UnitTest
             var appMembers = SolutionScanner.GetMembers(@"..\..\..\TestConsoleApp\TestConsoleApp.csproj");
 
             var unreferencedMembers = SolutionScanner.FindUnreferenced(libMembers.Concat(appMembers),
-                except: (Member m) => m.Name.Contains("static") && m.Name.Contains(".Main(") 
+                isRoot: (Member m) => m.Name.Contains("static") && m.Name.Contains(".Main(") 
                 ).ToList();
 
             Assert.IsFalse(unreferencedMembers.Contains(new Member
             {
                 Name = "void TestClassLibrary.AClass.AMethod(int)"
+            }
+            )
+            );
+
+            Assert.IsFalse(unreferencedMembers.Contains(new Member
+            {
+                Name = "void TestClassLibrary.AClass.IndirectlyReferencedMethod()"
             }
             )
             );
@@ -66,6 +84,12 @@ namespace ReferenceMapper.UnitTest
             Assert.Contains(new Member
             {
                 Name = "void TestClassLibrary.AClass.UnreferencedMethod()"
+            },
+            unreferencedMembers);
+
+            Assert.Contains(new Member
+            {
+                Name = "void TestClassLibrary.AClass.IndirectlyUnreferencedMethod()"
             },
             unreferencedMembers);
         }
