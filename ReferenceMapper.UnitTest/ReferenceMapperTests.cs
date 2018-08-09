@@ -34,6 +34,18 @@ namespace ReferenceMapper.UnitTest
                 Name = "void TestClassLibrary.AClass.IndirectlyUnreferencedMethod()"
             },
             libMembers);
+
+            Assert.Contains(new Member
+            {
+                Name = "void TestClassLibrary.AClass.OnlyReferencedByTestMethod()"
+            },
+libMembers);
+
+            Assert.Contains(new Member
+            {
+                Name = "static void TestClassLibrary.AClassUnitTests.ATest()"
+            },
+libMembers);
         }
 
         [Test]
@@ -57,41 +69,39 @@ namespace ReferenceMapper.UnitTest
             var appMembers = SolutionScanner.GetMembers(@"..\..\..\TestConsoleApp\TestConsoleApp.csproj");
 
             var unreferencedMembers = SolutionScanner.FindUnreferenced(libMembers.Concat(appMembers),
-                isRoot: (Member m) => m.Name.Contains("static") && m.Name.Contains(".Main(") 
+                isRoot: Roots.MainMethods.And(Roots.TestRelated)
                 ).ToList();
 
-            Assert.IsFalse(unreferencedMembers.Contains(new Member
-            {
-                Name = "void TestClassLibrary.AClass.AMethod(int)"
-            }
-            )
-            );
+            AssertNotIncluded(unreferencedMembers, "void TestClassLibrary.AClass.AMethod(int)");
+            AssertNotIncluded(unreferencedMembers, "void TestClassLibrary.AClass.IndirectlyReferencedMethod(");
 
-            Assert.IsFalse(unreferencedMembers.Contains(new Member
-            {
-                Name = "void TestClassLibrary.AClass.IndirectlyReferencedMethod()"
-            }
-            )
-            );
+            AssertNotIncluded(unreferencedMembers, "static void TestClassLibrary.AClassUnitTests.ATest()");
+            AssertNotIncluded(unreferencedMembers, "void TestClassLibrary.AClass.OnlyReferencedByTestMethod(");
 
+            AssertNotIncluded(unreferencedMembers, "static void TestConsoleApp.Program.Main(string[])");
+
+            AssertIncluded(unreferencedMembers, "void TestClassLibrary.AClass.UnreferencedMethod()");
+            AssertIncluded(unreferencedMembers, "void TestClassLibrary.AClass.IndirectlyUnreferencedMethod()");
+        }
+
+        private static void AssertIncluded(System.Collections.Generic.List<Member> unreferencedMembers, string Name)
+        {
+            Assert.Contains(new Member
+            {
+                Name = Name
+            },
+            unreferencedMembers, Name + " was not included");
+        }
+
+        private static void AssertNotIncluded(System.Collections.Generic.List<Member> unreferencedMembers, string Name)
+        {
             Assert.IsFalse(unreferencedMembers.Contains(new Member
             {
-                Name = "static void TestConsoleApp.Program.Main(string[])"
+                Name = Name
             }
               )
+              , Name + " was included in the collection but shouldn't."
               );
-
-            Assert.Contains(new Member
-            {
-                Name = "void TestClassLibrary.AClass.UnreferencedMethod()"
-            },
-            unreferencedMembers);
-
-            Assert.Contains(new Member
-            {
-                Name = "void TestClassLibrary.AClass.IndirectlyUnreferencedMethod()"
-            },
-            unreferencedMembers);
         }
     }
 }

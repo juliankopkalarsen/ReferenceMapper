@@ -10,11 +10,11 @@ namespace Runner
         {
             Console.WriteLine("Reading...");
 
-            var allMembers = args.SelectMany(a => SolutionScanner.GetMembers(a));
+            var allMembers = args.SelectMany(a => SolutionScanner.GetMembers(a)).ToList();
 
             Console.WriteLine("Parsing is done");
 
-            var unreferenced = SolutionScanner.FindUnreferenced(allMembers);
+            var unreferenced = SolutionScanner.FindUnreferenced(allMembers, Roots.MainMethods.And(Roots.TestRelated));
 
             Console.WriteLine("Unreferenced Members:");
 
@@ -22,6 +22,12 @@ namespace Runner
             {
                 Console.WriteLine(member.Name);
             }
+
+            Console.WriteLine("");
+            Console.WriteLine("");
+            Console.WriteLine("");
+
+            Console.WriteLine(unreferenced.Count + " unreferenced members");
 
             Console.Read();
         }

@@ -7,6 +7,8 @@ namespace ReferenceMapper
     {
         public string Name;
         public string[] References;
+        public string[] Attributes;
+
 
         public override bool Equals(object obj)
         {

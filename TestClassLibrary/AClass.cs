@@ -14,5 +14,8 @@ namespace TestClassLibrary
         }
 
         public void IndirectlyUnreferencedMethod() { }
+
+        public void OnlyReferencedByTestMethod() { }
+
     }
 }

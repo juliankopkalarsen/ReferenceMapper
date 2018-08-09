@@ -11,9 +11,6 @@ namespace ReferenceMapper
 {
     public class SolutionScanner
     {
-        public static IList<Member> FindUnreferenced(IEnumerable<Member> members) =>
-            FindUnreferenced(members, m => m.Name.Contains("static") && m.Name.Contains(".Main("));
-
 
         public static IList<Member> FindUnreferenced(IEnumerable<Member> members, Func<Member, bool> isRoot)
         {
@@ -36,8 +33,11 @@ namespace ReferenceMapper
             var toRemove = new List<Member>();
             foreach (var referenceName in root.References)
             {
-                toRemove.Add(membersByName[referenceName]);
-                membersByName.Remove(referenceName);
+                if (membersByName.ContainsKey(referenceName))
+                {
+                    toRemove.Add(membersByName[referenceName]);
+                    membersByName.Remove(referenceName);
+                }
             }
             foreach (var item in toRemove)
             {
@@ -68,11 +68,11 @@ namespace ReferenceMapper
         private static IEnumerable<Member> ReadSolution(string solutionPath, MSBuildWorkspace msWorkspace)
         {
             return msWorkspace
-                                .OpenSolutionAsync(solutionPath)
-                                .Result
-                                .Projects
-                                .SelectMany(p => GetMembersFromProject(p))
-                                .Where(m => m != null);
+                    .OpenSolutionAsync(solutionPath)
+                    .Result
+                    .Projects
+                    .SelectMany(p => GetMembersFromProject(p))
+                    .Where(m => m != null);
         }
 
         private static IEnumerable<Member> GetMembersFromProject(Project project)
@@ -99,11 +99,16 @@ namespace ReferenceMapper
             {
                 return null;
             }
-            var mem = new Member { Name = name };
+            var mem = new Member {
+                Name = name,
+                Attributes = symbol.GetAttributes().Select(a => a.ToString()).ToArray()
+            };
+
+            
 
             var refs = new List<string>();
 
-            var invokes = m.Body.DescendantNodes().OfType<InvocationExpressionSyntax>();
+            var invokes = m?.Body?.DescendantNodes()?.OfType<InvocationExpressionSyntax>() ?? new List<InvocationExpressionSyntax>();
             foreach (var invoke in invokes)
             {
                 var info = semanticModel.GetSymbolInfo(invoke);
