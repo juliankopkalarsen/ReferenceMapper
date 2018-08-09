@@ -4,11 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Extensions;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.FindSymbols;
-using Gremlin.Net.Process.Traversal;
 
 namespace ReferenceMapper
 {
@@ -36,40 +33,23 @@ namespace ReferenceMapper
             return unreferenced;
         }
 
-        public static void AddMembers(string solutionPath, GraphTraversalSource graph)
+        public static IList<Member> FindUnreferenced(IEnumerable<Member> members)
         {
-            var msWorkspace = MSBuildWorkspace.Create();
+            var references = members.SelectMany(m => m.References).Distinct().ToList();
 
-            IEnumerable<Member> members = null;
+            return members.Where(m => !references.Contains(m.Name)).ToList();
 
-            if (solutionPath.EndsWith(".sln"))
-            {
-                members = msWorkspace
-                    .OpenSolutionAsync(solutionPath)
-                    .Result
-                    .Projects
-                    .SelectMany(p => GetMembers(p))
-                    .Where(m => m != null);
-            }
-            else if (solutionPath.EndsWith(".csproj"))
-            {
-                members = GetMembers(msWorkspace
-                    .OpenProjectAsync(solutionPath)
-                    .Result);
-            }
-            else
-            {
-                throw new ArgumentException("path was not to a solution or project");
-            }
+        }
 
-            foreach (var member in members)
-            {
-                var v = graph.AddV("member").Property("name", member.Name);
-                foreach (var reference in member.References)
-                {
-                    graph.V().Has("name", reference).AddE("references").To(v);
-                }
-            }
+        public static IList<Member> FindUnreferenced(IEnumerable<Member> members, Func<Member, bool> except)
+        {
+            var references = members
+                .SelectMany(m => m.References).Distinct().ToList();
+
+            return members
+                .Where(m => !except(m))
+                .Where(m => !references.Contains(m.Name)).ToList();
+
         }
 
         public static IEnumerable<Member> GetMembers(string solutionPath)
@@ -82,12 +62,12 @@ namespace ReferenceMapper
                     .OpenSolutionAsync(solutionPath)
                     .Result
                     .Projects
-                    .SelectMany(p => GetMembers(p))
+                    .SelectMany(p => GetMembersFromProject(p))
                     .Where(m => m != null);
             }
             else if (solutionPath.EndsWith(".csproj"))
             {
-                return GetMembers(msWorkspace
+                return GetMembersFromProject(msWorkspace
                     .OpenProjectAsync(solutionPath)
                     .Result);
             }
@@ -97,7 +77,7 @@ namespace ReferenceMapper
             }
         }
 
-        private static IEnumerable<Member> GetMembers(Project project)
+        private static IEnumerable<Member> GetMembersFromProject(Project project)
         { 
             var compilation = project.GetCompilationAsync().Result;
 
@@ -125,12 +105,27 @@ namespace ReferenceMapper
 
             var refs = new List<string>();
 
-            var invokes = m.SyntaxTree.GetRoot().DescendantNodes().OfType<IdentifierNameSyntax>();
+            var invokes = m.SyntaxTree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>();
             foreach (var invoke in invokes)
             {
-                var member = semanticModel.GetSymbolInfo(invoke).Symbol;
-                if (member == null) continue;
-                var str = SymbolString(member);
+                var info = semanticModel.GetSymbolInfo(invoke);
+
+                ISymbol memberSymbol;
+                if (info.Symbol != null)
+                {
+                    memberSymbol = info.Symbol;
+                }
+                else if (info.CandidateSymbols.Length > 0)
+                {
+                    memberSymbol = info.CandidateSymbols[0];
+                }
+                else
+                {
+                    memberSymbol = null;
+                }
+         
+                if (memberSymbol == null) continue;
+                var str = SymbolString(memberSymbol);
                 if (str != null)
                     refs.Add(str);
             }
@@ -143,7 +138,7 @@ namespace ReferenceMapper
         private static string SymbolString(ISymbol member)
         {
             if (member is IMethodSymbol method)
-                return $"{method.ReturnType} {method.ToDisplayString()}";
+                return $"{(method.IsStatic ? "static " : "")}{method.ReturnType} {method.ToDisplayString()}";
 
             if (member is IFieldSymbol field)
                 return $"{field.Type} {field.ToDisplayString()}";

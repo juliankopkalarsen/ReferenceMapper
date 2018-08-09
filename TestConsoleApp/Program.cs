@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TestClassLibrary;
+﻿using TestClassLibrary;
 
 namespace TestConsoleApp
 {
@@ -12,7 +7,7 @@ namespace TestConsoleApp
         static void Main(string[] args)
         {
             var c = new AClass();
-            c.AMethod();
+            c.AMethod(3);
         }
     }
 }

@@ -1,12 +1,6 @@
-﻿using Gremlin.Net.Structure;
-using OpenSoftware.DgmlTools.Model;
-using ReferenceMapper;
+﻿using ReferenceMapper;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Runner
 {
@@ -14,12 +8,13 @@ namespace Runner
     {
         static void Main(string[] args)
         {
-            var g = new Graph().Traversal();
+            var libMembers = SolutionScanner.GetMembers(@"..\..\..\TestClassLibrary\TestClassLibrary.csproj");
+            var appMembers = SolutionScanner.GetMembers(@"..\..\..\TestConsoleApp\TestConsoleApp.csproj");
 
-            SolutionScanner.AddMembers(@"..\..\..\TestClassLibrary\TestClassLibrary.csproj", g);
-            SolutionScanner.AddMembers(@"..\..\..\TestConsoleApp\TestConsoleApp.csproj", g);
-
-            Console.WriteLine(g.E().ToList());
+            foreach (var member in libMembers.Concat(appMembers))
+            {
+                Console.WriteLine(member.Name);
+            }
 
             Console.WriteLine("parsed solutions");
             Console.Read();

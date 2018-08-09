@@ -3,6 +3,8 @@ namespace TestClassLibrary
 {
     public class AClass
     {
-        public void AMethod() { }
+        public void AMethod(int input) { }
+
+        public void UnreferencedMethod() { }
     }
 }
