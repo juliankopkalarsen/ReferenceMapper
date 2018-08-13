@@ -8,11 +8,11 @@ namespace ReferenceMapper
 {
     public static class Roots
     {
-        public static Func<Member, bool> MainMethods => (Member m) => 
+        public static Func<Method, bool> MainMethods => (Method m) => 
         m.Name.Contains("static") 
         && m.Name.Contains(".Main(");
 
-        public static Func<Member, bool> TestRelated => (Member m) => 
+        public static Func<Method, bool> TestRelated => (Method m) => 
             m.Attributes.Contains("NUnit.Framework.TestAttribute")
             || m.Attributes.Contains("Test")
             || m.Attributes.Contains("TestFixture")
@@ -22,12 +22,12 @@ namespace ReferenceMapper
             || m.Attributes.Contains("SetUp")
             || m.Attributes.Contains("TearDown");
 
-        public static Func<Member, bool> Generated => (Member m) => m.IsGenerated;
+        public static Func<Method, bool> Generated => (Method m) => m.IsGenerated;
     }
 
     public static class RootsExtensions
     {
-        public static Func<Member, bool> And(this Func<Member, bool> a, Func<Member, bool> b) =>
+        public static Func<Method, bool> And(this Func<Method, bool> a, Func<Method, bool> b) =>
             m => a(m) | b(m);
 
     }

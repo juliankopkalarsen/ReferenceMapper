@@ -8,6 +8,10 @@ namespace TestConsoleApp
         {
             var c = new AClass();
             c.AMethod(3);
+
+            ISomething s = new ASomething();
+            s.SomeBehavior();
+
         }
     }
 }
