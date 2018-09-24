@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis.CSharp.Extensions;
 using Microsoft.CodeAnalysis;
+using Microsoft.Build.Locator;
+using System.Threading.Tasks;
 
 namespace ReferenceMapper
 {
@@ -61,19 +63,30 @@ namespace ReferenceMapper
             }
         }
 
-        public static IEnumerable<Method> GetMembers(string solutionPath)
+        public static async Task<IEnumerable<Method>> GetMembers(string solutionPath, MSBuildWorkspace msworkspace = null)
         {
-            var msWorkspace = MSBuildWorkspace.Create();
+            if (!MSBuildLocator.IsRegistered)
+            {
+                MSBuildLocator.RegisterDefaults();
+            }
 
+            var workspace = msworkspace ?? MSBuildWorkspace.Create();
             if (solutionPath.EndsWith(".sln"))
             {
-                return ReadSolution(solutionPath, msWorkspace);
+                var solution = await workspace.OpenSolutionAsync(solutionPath);
+                var members = new List<Method>();
+                foreach (var project in solution.Projects)
+                {
+                    members.AddRange(await GetMembersFromProject(project));
+                }
+
+                return members.Where(m => m != null);
             }
             else if (solutionPath.EndsWith(".csproj"))
             {
-                return GetMembersFromProject(msWorkspace
-                    .OpenProjectAsync(solutionPath)
-                    .Result);
+                var project = await workspace.OpenProjectAsync(solutionPath);
+                return (await GetMembersFromProject(project))
+                       .Where(m => m != null);
             }
             else
             {
@@ -81,19 +94,10 @@ namespace ReferenceMapper
             }
         }
 
-        private static IEnumerable<Method> ReadSolution(string solutionPath, MSBuildWorkspace msWorkspace)
-        {
-            return msWorkspace
-                    .OpenSolutionAsync(solutionPath)
-                    .Result
-                    .Projects
-                    .SelectMany(p => GetMembersFromProject(p))
-                    .Where(m => m != null);
-        }
 
-        private static IEnumerable<Method> GetMembersFromProject(Project project)
+        private static async Task<IEnumerable<Method>> GetMembersFromProject(Project project)
         { 
-            var compilation = project.GetCompilationAsync().Result;
+            var compilation = await project.GetCompilationAsync();
 
             var trees = compilation.SyntaxTrees;
             

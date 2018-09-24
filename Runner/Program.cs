@@ -1,16 +1,32 @@
 ﻿using ReferenceMapper;
 using System;
 using System.Linq;
+using Microsoft.Build.Locator;
+using Microsoft.CodeAnalysis.MSBuild;
+using Microsoft.CodeAnalysis;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Runner
 {
-    class Program
+    static class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            Console.WriteLine("Reading...");
+            // Locate and register the default instance of MSBuild installed on this machine.
+            MSBuildLocator.RegisterDefaults();
 
-            var allMembers = args.SelectMany(a => SolutionScanner.GetMembers(a)).ToList();
+            // The test solution is copied to the output directory when you build this sample.
+            var workspace = MSBuildWorkspace.Create();
+
+            Console.WriteLine("Reading...");
+            var allMembers = new List<Method>();
+
+            foreach (var item in args)
+            {
+                var members = await SolutionScanner.GetMembers(item, workspace);
+                allMembers.AddRange(members);
+            }
 
             Console.WriteLine("Parsing is done");
 

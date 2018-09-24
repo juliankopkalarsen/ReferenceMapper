@@ -1,4 +1,6 @@
-﻿using NUnit.Framework;
+﻿using Microsoft.Build.Locator;
+using Microsoft.CodeAnalysis.MSBuild;
+using NUnit.Framework;
 using System.Linq;
 
 namespace ReferenceMapper.UnitTest
@@ -6,10 +8,10 @@ namespace ReferenceMapper.UnitTest
     public class ReferenceMapperTests
     {
         [Test]
-        public void Get_AClass_Members()
+        public async void Get_AClass_Members()
         {
-            var libMembers = SolutionScanner.GetMembers(@"..\..\..\TestClassLibrary\TestClassLibrary.csproj")
-                .ToList();
+            var libMembers = (await SolutionScanner.GetMembers(@"..\..\..\TestClassLibrary\TestClassLibrary.csproj"))
+                            .ToList();
 
             Assert.Contains(new Method
             {
@@ -49,10 +51,10 @@ libMembers);
         }
 
         [Test]
-        public void Get_Program_Members()
+        public async void Get_Program_Members()
         {
-            var appMembers = SolutionScanner.GetMembers(@"..\..\..\TestConsoleApp\TestConsoleApp.csproj")
-                .ToList();
+            var appMembers = (await SolutionScanner.GetMembers(@"..\..\..\TestConsoleApp\TestConsoleApp.csproj"))
+                            .ToList();
 
             Assert.Contains(new Method
             {
@@ -63,10 +65,10 @@ libMembers);
         }
 
         [Test]
-        public void FindUnreferencedMethods()
+        public async void FindUnreferencedMethods()
         {
-            var libMembers = SolutionScanner.GetMembers(@"..\..\..\TestClassLibrary\TestClassLibrary.csproj");
-            var appMembers = SolutionScanner.GetMembers(@"..\..\..\TestConsoleApp\TestConsoleApp.csproj");
+            var libMembers = await SolutionScanner.GetMembers(@"..\..\..\TestClassLibrary\TestClassLibrary.csproj");
+            var appMembers = await SolutionScanner.GetMembers(@"..\..\..\TestConsoleApp\TestConsoleApp.csproj");
 
             var unreferencedMembers = SolutionScanner.FindUnreferenced(libMembers.Concat(appMembers),
                 isRoot: Roots.MainMethods.And(Roots.TestRelated).And(Roots.Generated)
