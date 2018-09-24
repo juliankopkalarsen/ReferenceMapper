@@ -5,7 +5,7 @@ namespace TestClassLibrary
     public class AClassUnitTests
     {
 
-        [Test]
+        [Test, Ignore]
         public static void ATest()
         {
             var c = new AClass();
